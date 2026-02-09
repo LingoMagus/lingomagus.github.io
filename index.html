@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="LingoMagus — storytelling for multilingual families raising bilingual children. Starting with Russian." />
+  <title>LingoMagus — Stories that keep heritage language alive</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root{
+      --bg:#fbfaf7;
+      --ink:#1f2937;
+      --muted:#5b6473;
+      --card:#ffffff;
+      --border:rgba(31,41,55,.10);
+      --shadow: 0 10px 30px rgba(31,41,55,.08);
+      --radius:18px;
+      --max: 980px;
+      --pad: 22px;
+      --accent: #4b6b88; /* dusty blue */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-serif, Georgia, "Times New Roman", Times, serif;
+      background:var(--bg);
+      color:var(--ink);
+      line-height:1.45;
+    }
+    a{color:inherit}
+    .wrap{max-width:var(--max); margin:0 auto; padding:28px var(--pad) 60px;}
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      position:sticky; top:0; backdrop-filter:saturate(180%) blur(10px);
+      background:rgba(251,250,247,.84);
+      border-bottom:1px solid var(--border);
+      z-index:10;
+      padding:14px var(--pad);
+    }
+    .brand{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; letter-spacing:.2px;}
+    .brand b{font-weight:700}
+    .lang{
+      display:flex; gap:8px; align-items:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size:14px;
+    }
+    .lang button{
+      border:1px solid var(--border);
+      background:var(--card);
+      border-radius:999px;
+      padding:8px 12px;
+      cursor:pointer;
+    }
+    .lang button[aria-pressed="true"]{
+      border-color: rgba(75,107,136,.55);
+      box-shadow: 0 0 0 3px rgba(75,107,136,.10);
+    }
+    main{padding-top:28px;}
+    .hero{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:32px 28px;
+    }
+    h1{
+      margin:0 0 10px;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height:1.08;
+      letter-spacing:-.2px;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size: clamp(16px, 1.9vw, 18px);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .ctaRow{
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+      margin-top:18px;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 16px;
+      border-radius:999px;
+      border:1px solid rgba(75,107,136,.35);
+      background:rgba(75,107,136,.10);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-weight:600;
+      text-decoration:none;
+    }
+    .btn:hover{background:rgba(75,107,136,.14)}
+    .email{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size:14px;
+      color:var(--muted);
+    }
+    section{
+      margin-top:22px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:26px 28px;
+    }
+    h2{
+      margin:0 0 12px;
+      font-size:22px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      letter-spacing:.2px;
+    }
+    p{margin:10px 0}
+    ul{
+      margin:10px 0 0;
+      padding-left:18px;
+    }
+    li{margin:8px 0; color:var(--ink)}
+    .note{
+      color:var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size:14px;
+      margin-top:10px;
+    }
+    .columns{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:18px;
+    }
+    @media (min-width: 860px){
+      .columns{grid-template-columns: 1fr 1fr;}
+    }
+    footer{
+      margin-top:22px;
+      padding:18px 6px 0;
+      color:var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-size:14px;
+      text-align:center;
+    }
+    .smallcaps{font-variant:all-small-caps; letter-spacing:.08em}
+    .divider{height:1px; background:var(--border); margin:18px 0;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><b>LingoMagus</b></div>
+    <div class="lang" role="group" aria-label="Language">
+      <span class="smallcaps">EN</span>
+      <button id="btnEN" aria-pressed="true" type="button">EN</button>
+      <button id="btnRU" aria-pressed="false" type="button">RU</button>
+      <span class="smallcaps">RU</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <main>
+      <div class="hero">
+        <h1 data-i18n="hero_h1">Learn a language.<br/>Stay connected across generations.</h1>
+        <p class="sub" data-i18n="hero_sub">
+          LingoMagus is a storytelling-based language project for multilingual families raising bilingual children —
+          starting with Russian as the first project language.
+        </p>
+        <div class="ctaRow">
+          <a class="btn" id="ctaBtn" href="mailto:info@lingomagus.com?subject=Early%20Preview%20Request&body=Hi%2C%0A%0AI%27m%20interested%20in%20receiving%20the%20first%20season%20of%20LingoMagus%20stories.%0A%0AThank%20you%2C" data-i18n="cta_button">
+            Request Early Preview
+          </a>
+          <div class="email"><span data-i18n="cta_or">or write anytime:</span> <b>info@lingomagus.com</b></div>
+        </div>
+        <div class="note" data-i18n="cta_note">
+          Be part of a living project. Families are welcome to share language challenges they notice at home — patterns that help shape future stories.
+        </div>
+      </div>
+
+      <section>
+        <h2 data-i18n="conn_h2">The Connection</h2>
+        <p data-i18n="conn_p1">In multilingual families, language is more than words. It’s how grandparents pass on stories, how parents pass on identity, and how children learn where they belong.</p>
+        <p data-i18n="conn_p2">When a heritage language fades from everyday life, connection thins — conversations shorten, jokes disappear, stories stop traveling.</p>
+        <p data-i18n="conn_p3">LingoMagus helps keep a family’s shared language alive, so it can move naturally between generations.</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="strength_h2">The Strength (not a trick)</h2>
+        <p data-i18n="strength_p1">The “magic” in LingoMagus isn’t technology. It’s how the human mind naturally absorbs language.</p>
+        <div class="columns">
+          <div>
+            <p class="note" data-i18n="strength_list_intro">We learn best when:</p>
+            <ul>
+              <li data-i18n="strength_li1">language comes through story</li>
+              <li data-i18n="strength_li2">meaning repeats in different forms</li>
+              <li data-i18n="strength_li3">grammar is felt before it’s named</li>
+              <li data-i18n="strength_li4">voices carry emotion, not perfection</li>
+            </ul>
+          </div>
+          <div>
+            <p data-i18n="strength_p2">This is how children learn at home. LingoMagus simply gives that wisdom a calm, reliable space.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 data-i18n="how_h2">How it Works</h2>
+        <p><b data-i18n="how_b1">One continuous story</b></p>
+        <p data-i18n="how_p1">Follow a brother and sister as they grow up — daily life, questions, small events, real moments. As the characters grow, the language grows with them.</p>
+        <p class="note" data-i18n="how_note1">Short episodic chapters bring familiar words and structures back in new everyday contexts.</p>
+
+        <div class="divider"></div>
+
+        <p><b data-i18n="how_b2">Multiple perspectives</b></p>
+        <p data-i18n="how_p2">The same moments are told as I / you / he / they — letting structure and grammar settle naturally, without explanations.</p>
+
+        <div class="divider"></div>
+
+        <p><b data-i18n="how_b3">Real human voices</b></p>
+        <p data-i18n="how_p3">Every story is told by native speakers. No synthetic voices — just warmth, rhythm, and real emotion.</p>
+
+        <div class="divider"></div>
+
+        <p><b data-i18n="how_b4">A calm rhythm</b></p>
+        <p data-i18n="how_p4">No tests. No grades. No performance pressure. Children can listen and follow the highlighted script — in the car, before bed, or while playing.</p>
+        <p class="note" data-i18n="how_note2">This is how children connect with the characters — and language becomes part of that connection.</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="for_h2">Who it’s for</h2>
+        <ul>
+          <li data-i18n="for_li1">Multilingual families raising bilingual children</li>
+          <li data-i18n="for_li2">Parents noticing a heritage language slipping from daily use</li>
+          <li data-i18n="for_li3">Families who want language to stay part of everyday life — not an extra task</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 data-i18n="status_h2">Current status</h2>
+        <p data-i18n="status_p1">LingoMagus is at an early stage. The first stories and recordings are being created now — starting with Russian.</p>
+        <p class="note" data-i18n="status_p2">Want to see or listen to the first episodes as they take shape? Use the button above or write to us.</p>
+      </section>
+
+      <section>
+        <h2 data-i18n="cta_h2">Be part of a living project.</h2>
+        <p data-i18n="cta_p1">Parents are always welcome to write and share language challenges they notice at home — recurring mistakes, stuck phrases, moments where words don’t come easily.</p>
+        <p class="note" data-i18n="cta_p2">Shared patterns are observed over time and thoughtfully woven into future stories.</p>
+        <div class="ctaRow">
+          <a class="btn" href="mailto:info@lingomagus.com?subject=Early%20Preview%20Request&body=Hi%2C%0A%0AI%27m%20interested%20in%20receiving%20the%20first%20season%20of%20LingoMagus%20stories.%0A%0AThank%20you%2C" data-i18n="cta_button2">Request Early Preview</a>
+          <div class="email"><b>info@lingomagus.com</b></div>
+        </div>
+      </section>
+
+      <footer>
+        <div data-i18n="footer_line1">Language. Identity. Belonging.</div>
+        <div data-i18n="footer_line2">Stories that grow with your child.</div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    const dict = {
+      en: {
+        hero_h1: "Learn a language.<br/>Stay connected across generations.",
+        hero_sub: "LingoMagus is a storytelling-based language project for multilingual families raising bilingual children — starting with Russian as the first project language.",
+        cta_button: "Request Early Preview",
+        cta_or: "or write anytime:",
+        cta_note: "Be part of a living project. Families are welcome to share language challenges they notice at home — patterns that help shape future stories.",
+
+        conn_h2: "The Connection",
+        conn_p1: "In multilingual families, language is more than words. It’s how grandparents pass on stories, how parents pass on identity, and how children learn where they belong.",
+        conn_p2: "When a heritage language fades from everyday life, connection thins — conversations shorten, jokes disappear, stories stop traveling.",
+        conn_p3: "LingoMagus helps keep a family’s shared language alive, so it can move naturally between generations.",
+
+        strength_h2: "The Strength (not a trick)",
+        strength_p1: "The “magic” in LingoMagus isn’t technology. It’s how the human mind naturally absorbs language.",
+        strength_list_intro: "We learn best when:",
+        strength_li1: "language comes through story",
+        strength_li2: "meaning repeats in different forms",
+        strength_li3: "grammar is felt before it’s named",
+        strength_li4: "voices carry emotion, not perfection",
+        strength_p2: "This is how children learn at home. LingoMagus simply gives that wisdom a calm, reliable space.",
+
+        how_h2: "How it Works",
+        how_b1: "One continuous story",
+        how_p1: "Follow a brother and sister as they grow up — daily life, questions, small events, real moments. As the characters grow, the language grows with them.",
+        how_note1: "Short episodic chapters bring familiar words and structures back in new everyday contexts.",
+        how_b2: "Multiple perspectives",
+        how_p2: "The same moments are told as I / you / he / they — letting structure and grammar settle naturally, without explanations.",
+        how_b3: "Real human voices",
+        how_p3: "Every story is told by native speakers. No synthetic voices — just warmth, rhythm, and real emotion.",
+        how_b4: "A calm rhythm",
+        how_p4: "No tests. No grades. No performance pressure. Children can listen and follow the highlighted script — in the car, before bed, or while playing.",
+        how_note2: "This is how children connect with the characters — and language becomes part of that connection.",
+
+        for_h2: "Who it’s for",
+        for_li1: "Multilingual families raising bilingual children",
+        for_li2: "Parents noticing a heritage language slipping from daily use",
+        for_li3: "Families who want language to stay part of everyday life — not an extra task",
+
+        status_h2: "Current status",
+        status_p1: "LingoMagus is at an early stage. The first stories and recordings are being created now — starting with Russian.",
+        status_p2: "Want to see or listen to the first episodes as they take shape? Use the button above or write to us.",
+
+        cta_h2: "Be part of a living project.",
+        cta_p1: "Parents are always welcome to write and share language challenges they notice at home — recurring mistakes, stuck phrases, moments where words don’t come easily.",
+        cta_p2: "Shared patterns are observed over time and thoughtfully woven into future stories.",
+        cta_button2: "Request Early Preview",
+
+        footer_line1: "Language. Identity. Belonging.",
+        footer_line2: "Stories that grow with your child."
+      },
+      ru: {
+        hero_h1: "Учить язык.<br/>Сохранять связь между поколениями.",
+        hero_sub: "LingoMagus — сторителлинговый проект для многоязычных семей, в которых растут билингвальные дети. Первый язык проекта — русский.",
+        cta_button: "Запросить ранний доступ",
+        cta_or: "или напишите в любое время:",
+        cta_note: "Станьте частью живого проекта. Мы всегда рады письмам от семей: наблюдениям, трудностям, повторяющимся ошибкам — всему, что со временем помогает формировать новые истории.",
+
+        conn_h2: "О связи",
+        conn_p1: "В многоязычной семье язык — это не только средство общения. Это семейные истории, которые можно рассказать бабушке и дедушке. Это шутки, которые понятны только «своим». Это ощущение дома — даже если он в другой стране.",
+        conn_p2: "Когда язык наследия постепенно уходит из повседневной жизни, теряется не только словарный запас. Разговоры обрываются на полуслове, истории становятся короче, связь — менее глубокой.",
+        conn_p3: "LingoMagus помогает сохранить семейный язык живым — таким, чтобы через него продолжали передаваться истории, эмоции и ощущение «мы».",
+
+        strength_h2: "В чём здесь сила (а не магия)",
+        strength_p1: "В LingoMagus нет фокусов и методических трюков. Есть понимание того, как дети на самом деле усваивают язык.",
+        strength_list_intro: "Лучше всего это происходит, когда:",
+        strength_li1: "язык звучит в форме истории",
+        strength_li2: "смысл повторяется естественно, а не «по программе»",
+        strength_li3: "грамматика сначала чувствуется, а не объясняется",
+        strength_li4: "голос живой, с эмоцией, а не «учебный»",
+        strength_p2: "Так язык живёт в семье. LingoMagus просто создаёт для этого устойчивую среду.",
+
+        how_h2: "Как это работает",
+        how_b1: "Одна непрерывная история",
+        how_p1: "Ребёнок следит за жизнью брата и сестры, которые растут, задают вопросы, попадают в обычные жизненные ситуации и проживают повседневные события. По мере того как герои взрослеют, вместе с ними постепенно развивается и язык.",
+        how_note1: "История разбита на короткие эпизоды, чтобы знакомые слова и конструкции возвращались в новых жизненных контекстах.",
+        how_b2: "Разные точки зрения",
+        how_p2: "Одни и те же события рассказываются от лица я / ты / он / они — благодаря этому структура языка «укладывается» естественно, без объяснений и правил.",
+        how_b3: "Живые человеческие голоса",
+        how_p3: "Все истории озвучены носителями языка. Без синтетических голосов — только живая речь: тепло, ритм и эмоция.",
+        how_b4: "Спокойный ритм",
+        how_p4: "Никаких тестов. Никаких оценок. Никакого давления. Ребёнок может просто слушать и следить за текстом, который подсвечивается по ходу истории — в машине, перед сном или во время игры.",
+        how_note2: "Так ребёнок привязывается к героям — и язык становится частью этой связи.",
+
+        for_h2: "Для кого",
+        for_li1: "Для многоязычных семей с билингвальными детьми",
+        for_li2: "Для родителей, которые замечают, что язык наследия всё реже звучит дома",
+        for_li3: "Для тех, кто хочет сохранить язык частью повседневной жизни, а не превратить его в обязанность",
+
+        status_h2: "На каком этапе проект",
+        status_p1: "LingoMagus находится на стадии запуска. Сейчас создаются первые истории и аудиозаписи — на русском языке как первом языке проекта.",
+        status_p2: "Хотите увидеть или послушать первые эпизоды по мере их появления? Нажмите кнопку выше или напишите нам.",
+
+        cta_h2: "Станьте частью живого проекта.",
+        cta_p1: "Вы можете в любой момент написать нам и рассказать, с какими языковыми трудностями вы сталкиваетесь дома: повторяющиеся ошибки, «застрявшие» фразы, ситуации, где ребёнку сложно выразить мысль.",
+        cta_p2: "Мы внимательно собираем такие наблюдения и со временем вплетаем их в новые истории.",
+        cta_button2: "Запросить ранний доступ",
+
+        footer_line1: "Язык. Идентичность. Принадлежность.",
+        footer_line2: "Истории, которые растут вместе с ребёнком."
+      }
+    };
+
+    const btnEN = document.getElementById('btnEN');
+    const btnRU = document.getElementById('btnRU');
+
+    function setLang(lang){
+      document.documentElement.lang = lang === 'ru' ? 'ru' : 'en';
+      btnEN.setAttribute('aria-pressed', lang === 'en');
+      btnRU.setAttribute('aria-pressed', lang === 'ru');
+      document.querySelectorAll('[data-i18n]').forEach(el=>{
+        const key = el.getAttribute('data-i18n');
+        const val = dict[lang][key];
+        if(val !== undefined){
+          el.innerHTML = val;
+        }
+      });
+    }
+    btnEN.addEventListener('click', ()=>setLang('en'));
+    btnRU.addEventListener('click', ()=>setLang('ru'));
+
+    // default language
+    setLang('en');
+  </script>
+</body>
+</html>
