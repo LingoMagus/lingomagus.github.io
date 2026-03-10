@@ -335,5 +335,30 @@
     btnRU.addEventListener('click', ()=>setLang('ru'));
     setLang('en');
   </script>
+  <style>
+.story-container { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 2.2; font-size: 22px; max-width: 800px; margin: 40px auto; padding: 20px; color: #2c3e50; }
+.word { cursor: pointer; transition: all 0.15s ease; padding: 2px 4px; border-radius: 4px; display: inline-block; border-bottom: 2px solid transparent; }
+.word:hover { background-color: #f0f0f0; }
+.highlight { background-color: #ffeb3b; color: #000; font-weight: bold; border-bottom: 2px solid #fbc02d; transform: scale(1.05); }
+.player-sticky { position: sticky; top: 0; background: rgba(255,255,255,0.95); padding: 15px; border-bottom: 1px solid #eee; z-index: 100; text-align: center; backdrop-filter: blur(5px); }
+audio { width: 100%; max-width: 500px; }
+</style>
+
+<div class="player-sticky">
+<audio id="audio-player" controls src="S1_E1_FinalTest.mp3"></audio>
+</div>
+
+<div id="russian-story" class="story-container">
+</div>
+
+<script>
+async function initLingoMagus() {
+try {
+const response = await fetch('episode1.json');
+const data = await response.json();
+const container = document.getElementById('russian-story');
+const audio = document.getElementById('audio-player');
+
+</script>
 </body>
 </html>
