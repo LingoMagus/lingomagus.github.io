@@ -109,7 +109,76 @@
     .bullets {margin: 10px 0 0; padding-left: 0; list-style: none;}
     .bullets li{margin:8px 0;}
     .bullets li:before{content:"— "; color:var(--muted);}
-  </style>
+  
+    .episode-card{
+      margin-top:22px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:26px 28px;
+    }
+    .episode-meta{
+      color:var(--muted);
+      font-size:14px;
+      margin:4px 0 14px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+    }
+    .playerRow{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin:10px 0 14px;
+    }
+    .playBtn{
+      border:1px solid rgba(75,107,136,.35);
+      background:rgba(75,107,136,.10);
+      border-radius:999px;
+      padding:10px 16px;
+      cursor:pointer;
+      font: inherit;
+      font-weight:600;
+    }
+    .playBtn:hover{background:rgba(75,107,136,.14)}
+    .audioEl{
+      width:100%;
+      margin:6px 0 14px;
+    }
+    .syncHint{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:10px;
+    }
+    .transcript{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      line-height:1.9;
+      max-height:420px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .word{
+      background:#fafafa;
+      border:1px solid #eee;
+      padding:4px 6px;
+      border-radius:6px;
+      cursor:pointer;
+      transition:all .15s ease;
+      font-size:15px;
+    }
+    .word:hover{
+      border-color: rgba(75,107,136,.35);
+      transform: translateY(-1px);
+    }
+    .word.active{
+      background:#dfe8ff;
+      border-color:#6a8cff;
+      box-shadow: 0 0 0 3px rgba(106,140,255,.08);
+    }
+
+</style>
 </head>
 <body>
   <header>
@@ -207,6 +276,26 @@
         </div>
       </section>
 
+
+      <section class="episode-card">
+        <h2 data-i18n="episode_h2">Preview episode</h2>
+        <p><strong data-i18n="episode_title">Season 1 — First Meeting</strong></p>
+        <p class="episode-meta" data-i18n="episode_subtitle">Episode 1 — Кто мы такие</p>
+        <p class="syncHint" data-i18n="episode_intro">You can test the first audio episode here. The text below highlights in sync with the recording.</p>
+
+        <div class="playerRow">
+          <button id="playBtn" class="playBtn" type="button" data-i18n="player_button">▶ Play episode</button>
+        </div>
+
+        <audio id="episodeAudio" class="audioEl" preload="metadata" controls>
+          <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
+
+        <div id="syncStatus" class="syncHint" data-i18n="player_loading">Loading synced text…</div>
+        <div id="transcript" class="transcript"></div>
+      </section>
+
       <footer>
         <div data-i18n="footer_line1">Language. Identity. Belonging.</div>
         <div data-i18n="footer_line2">© 2026 LingoMagus. All rights reserved.</div>
@@ -263,6 +352,15 @@
 
         footer_line1: "Language. Identity. Belonging.",
         footer_line2: "© 2026 LingoMagus. All rights reserved.",
+
+        episode_h2: "Preview episode",
+        episode_title: "Season 1 — First Meeting",
+        episode_subtitle: "Episode 1 — Кто мы такие",
+        episode_intro: "You can test the first audio episode here. The text below highlights in sync with the recording.",
+        player_button: "▶ Play episode",
+        player_pause: "⏸ Pause",
+        player_loading: "Loading synced text…",
+        player_error: "Synced text could not be loaded yet.",,
         for_li4: "Forward-thinking parents who see a heritage language not only as roots, but as a real advantage — helping their children grow with cognitive flexibility, cultural depth, and opportunities anywhere in the world."
       },
       ru: {
@@ -312,6 +410,15 @@
 
         footer_line1: "Язык. Связь. Принадлежность.",
         footer_line2: "© 2026 LingoMagus. Все права защищены.",
+
+        episode_h2: "Пробный эпизод",
+        episode_title: "Сезон 1 — Первая встреча",
+        episode_subtitle: "Эпизод 1 — Кто мы такие",
+        episode_intro: "Здесь можно протестировать первый аудиоэпизод. Текст ниже подсвечивается по ходу записи.",
+        player_button: "▶ Включить эпизод",
+        player_pause: "⏸ Пауза",
+        player_loading: "Загрузка синхронизированного текста…",
+        player_error: "Синхронизированный текст пока не удалось загрузить.",,
         for_li4: "Для родителей, которые смотрят в будущее. Родной язык — это не только корни, но и реальное преимущество: гибкость ума, широта кругозора и больше возможностей для успеха в любой точке мира."
       }
     };
@@ -333,6 +440,95 @@
     }
     btnEN.addEventListener('click', ()=>setLang('en'));
     btnRU.addEventListener('click', ()=>setLang('ru'));
+
+    const episodeAudio = document.getElementById('episodeAudio');
+    const playBtn = document.getElementById('playBtn');
+    const transcript = document.getElementById('transcript');
+    const syncStatus = document.getElementById('syncStatus');
+    let fragments = [];
+    let activeIndex = -1;
+
+    function updatePlayerLabel(){
+      const lang = document.documentElement.lang === 'ru' ? 'ru' : 'en';
+      const key = episodeAudio.paused ? 'player_button' : 'player_pause';
+      playBtn.textContent = dict[lang][key];
+      if (!transcript.innerHTML) {
+        syncStatus.textContent = dict[lang]['player_loading'];
+      }
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (episodeAudio.paused) {
+        episodeAudio.play();
+      } else {
+        episodeAudio.pause();
+      }
+    });
+
+    episodeAudio.addEventListener('play', updatePlayerLabel);
+    episodeAudio.addEventListener('pause', updatePlayerLabel);
+    episodeAudio.addEventListener('ended', updatePlayerLabel);
+
+    function renderTranscript(){
+      transcript.innerHTML = '';
+      fragments.forEach((frag) => {
+        const word = document.createElement('span');
+        word.className = 'word';
+        word.textContent = String(frag.text || '').trim();
+        word.addEventListener('click', () => {
+          episodeAudio.currentTime = Number(frag.start || 0);
+          episodeAudio.play();
+        });
+        transcript.appendChild(word);
+      });
+    }
+
+    function updateHighlight(){
+      if (!fragments.length) return;
+      const t = episodeAudio.currentTime;
+      const idx = fragments.findIndex(f => t >= Number(f.start || 0) && t < Number(f.end || 0));
+
+      if (idx !== activeIndex) {
+        const els = transcript.querySelectorAll('.word');
+        if (activeIndex >= 0 && els[activeIndex]) els[activeIndex].classList.remove('active');
+        if (idx >= 0 && els[idx]) {
+          els[idx].classList.add('active');
+          els[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        activeIndex = idx;
+      }
+    }
+
+    episodeAudio.addEventListener('timeupdate', updateHighlight);
+
+    async function loadEpisodeTranscript(){
+      const lang = document.documentElement.lang === 'ru' ? 'ru' : 'en';
+      try {
+        const res = await fetch('episode1.json');
+        if (!res.ok) throw new Error('json not found');
+        const data = await res.json();
+
+        if (!Array.isArray(data.fragments)) {
+          throw new Error('unsupported json shape');
+        }
+
+        fragments = data.fragments;
+        renderTranscript();
+        syncStatus.textContent = '';
+      } catch (err) {
+        console.error(err);
+        syncStatus.textContent = dict[lang]['player_error'];
+      }
+    }
+
+    const _setLang = setLang;
+    setLang = function(lang){
+      _setLang(lang);
+      updatePlayerLabel();
+    };
+
+    loadEpisodeTranscript();
+
     setLang('en');
   </script>
 </body>
