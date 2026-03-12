@@ -109,65 +109,6 @@
     .bullets {margin: 10px 0 0; padding-left: 0; list-style: none;}
     .bullets li{margin:8px 0;}
     .bullets li:before{content:"— "; color:var(--muted);}
-  
-    .episodePreview{
-      margin-top:16px;
-      padding:16px 16px 12px;
-      border:1px solid var(--border);
-      border-radius:14px;
-      background:rgba(255,255,255,.72);
-    }
-    .episodePreviewTitle{
-      margin:0 0 4px;
-      font-weight:700;
-    }
-    .episodePreviewSub{
-      color:var(--muted);
-      font-size:14px;
-      margin:0 0 12px;
-    }
-    .playerRow{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-      margin:0 0 10px;
-    }
-    .playBtn{
-      border:1px solid rgba(75,107,136,.35);
-      background:rgba(75,107,136,.10);
-      border-radius:999px;
-      padding:10px 16px;
-      cursor:pointer;
-      font:inherit;
-      font-weight:600;
-    }
-    .playBtn:hover{background:rgba(75,107,136,.14)}
-    .audioEl{
-      width:100%;
-      margin:0 0 10px;
-    }
-    .syncHint{
-      color:var(--muted);
-      font-size:14px;
-      margin:0 0 10px;
-    }
-    .readalong{
-      margin-top:6px;
-      line-height:1.9;
-      font-size:16px;
-    }
-    .sentence{
-      padding:1px 4px;
-      border-radius:6px;
-      transition:background .15s ease, box-shadow .15s ease;
-      cursor:pointer;
-    }
-    .sentence.active{
-      background:#dfe8ff;
-      box-shadow:0 0 0 2px rgba(106,140,255,.10);
-    }
-
   </style>
 </head>
 <body>
@@ -255,20 +196,6 @@
         <h2 data-i18n="status_h2">Current status</h2>
         <p data-i18n="status_p1">LingoMagus is at an early stage. The first stories and recordings are being created now — starting with Russian.</p>
         <p class="note" data-i18n="status_p2">If you’d like to see or listen to the first episodes as they appear, write to us at <a href="mailto:info@lingomagus.com">info@lingomagus.com</a>.</p>
-
-        <div class="episodePreview">
-          <p class="episodePreviewTitle">Эпизод 1 — Кто мы такие</p>
-          <p class="episodePreviewSub">Сезон 1 — Первая встреча</p>
-          <div class="playerRow">
-            <button id="playBtn" class="playBtn" type="button">▶ Включить эпизод</button>
-          </div>
-          <audio id="episodeAudio" class="audioEl" preload="metadata" controls>
-            <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-          <div id="syncStatus" class="syncHint">Загрузка текста…</div>
-          <div id="readalong" class="readalong" aria-live="polite"></div>
-        </div>
       </section>
 
       <section>
@@ -404,106 +331,6 @@
         }
       });
     }
-
-    const episodeAudio = document.getElementById('episodeAudio');
-    const playBtn = document.getElementById('playBtn');
-    const syncStatus = document.getElementById('syncStatus');
-    const readalong = document.getElementById('readalong');
-    let sentenceCues = [];
-    let activeSentenceIndex = -1;
-
-    function updatePlayerLabel(){
-      if (!episodeAudio || !playBtn) return;
-      playBtn.textContent = episodeAudio.paused ? '▶ Включить эпизод' : '⏸ Пауза';
-    }
-
-    function groupFragmentsIntoSentences(fragments){
-      const out = [];
-      let current = null;
-
-      fragments.forEach((frag) => {
-        const text = String(frag.text || '').trim();
-        if (!text) return;
-
-        if (!current) {
-          current = { start: Number(frag.start || 0), end: Number(frag.end || 0), text: text };
-        } else {
-          current.text += (/^[,.;:!?]/.test(text) ? '' : ' ') + text;
-          current.end = Number(frag.end || current.end);
-        }
-
-        if (/[.!?…:]$/.test(text)) {
-          out.push(current);
-          current = null;
-        }
-      });
-
-      if (current) out.push(current);
-      return out;
-    }
-
-    function renderReadalong(){
-      readalong.innerHTML = '';
-      sentenceCues.forEach((cue, index) => {
-        const span = document.createElement('span');
-        span.className = 'sentence';
-        span.textContent = cue.text + ' ';
-        span.addEventListener('click', () => {
-          episodeAudio.currentTime = cue.start;
-          episodeAudio.play();
-        });
-        readalong.appendChild(span);
-      });
-    }
-
-    function updateSentenceHighlight(){
-      if (!sentenceCues.length) return;
-      const t = episodeAudio.currentTime;
-      const idx = sentenceCues.findIndex(c => t >= c.start && t < c.end);
-
-      if (idx !== activeSentenceIndex) {
-        const nodes = readalong.querySelectorAll('.sentence');
-        if (activeSentenceIndex >= 0 && nodes[activeSentenceIndex]) {
-          nodes[activeSentenceIndex].classList.remove('active');
-        }
-        if (idx >= 0 && nodes[idx]) {
-          nodes[idx].classList.add('active');
-          nodes[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
-        activeSentenceIndex = idx;
-      }
-    }
-
-    async function loadEpisodeTranscript(){
-      if (!episodeAudio || !readalong || !syncStatus) return;
-      try {
-        const res = await fetch('episode1.json');
-        if (!res.ok) throw new Error('json not found');
-        const data = await res.json();
-        if (!Array.isArray(data.fragments)) throw new Error('unsupported json shape');
-
-        sentenceCues = groupFragmentsIntoSentences(data.fragments);
-        renderReadalong();
-        syncStatus.textContent = '';
-      } catch (err) {
-        console.error(err);
-        syncStatus.textContent = 'Текст синхронизации пока не удалось загрузить.';
-      }
-    }
-
-    if (episodeAudio && playBtn) {
-      playBtn.addEventListener('click', () => {
-        if (episodeAudio.paused) episodeAudio.play();
-        else episodeAudio.pause();
-      });
-      episodeAudio.addEventListener('play', updatePlayerLabel);
-      episodeAudio.addEventListener('pause', updatePlayerLabel);
-      episodeAudio.addEventListener('ended', updatePlayerLabel);
-      episodeAudio.addEventListener('timeupdate', updateSentenceHighlight);
-      updatePlayerLabel();
-      loadEpisodeTranscript();
-    }
-
     btnEN.addEventListener('click', ()=>setLang('en'));
     btnRU.addEventListener('click', ()=>setLang('ru'));
     setLang('en');
