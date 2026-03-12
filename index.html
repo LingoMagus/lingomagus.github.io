@@ -109,77 +109,6 @@
     .bullets {margin: 10px 0 0; padding-left: 0; list-style: none;}
     .bullets li{margin:8px 0;}
     .bullets li:before{content:"— "; color:var(--muted);}
-  
-    .audioPreview{
-      margin-top:16px;
-      padding:16px 16px 12px;
-      border:1px solid var(--border);
-      border-radius:14px;
-      background:rgba(255,255,255,.72);
-    }
-    .audioPreviewTitle{
-      font-weight:700;
-      margin:0 0 6px;
-    }
-    .audioPreviewSub{
-      color:var(--muted);
-      font-size:14px;
-      margin:0 0 12px;
-    }
-    .playerRow{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-      margin:0 0 10px;
-    }
-    .playBtn{
-      border:1px solid rgba(75,107,136,.35);
-      background:rgba(75,107,136,.10);
-      border-radius:999px;
-      padding:10px 16px;
-      cursor:pointer;
-      font:inherit;
-      font-weight:600;
-    }
-    .playBtn:hover{background:rgba(75,107,136,.14)}
-    .audioEl{
-      width:100%;
-      margin:0 0 10px;
-    }
-    .syncHint{
-      color:var(--muted);
-      font-size:14px;
-      margin:0 0 10px;
-    }
-    .transcript{
-      display:flex;
-      flex-wrap:wrap;
-      gap:6px;
-      line-height:1.9;
-      max-height:180px;
-      overflow:auto;
-      padding-right:4px;
-    }
-    .word{
-      background:#fafafa;
-      border:1px solid #eee;
-      padding:4px 6px;
-      border-radius:6px;
-      cursor:pointer;
-      transition:all .15s ease;
-      font-size:15px;
-    }
-    .word:hover{
-      border-color: rgba(75,107,136,.35);
-      transform: translateY(-1px);
-    }
-    .word.active{
-      background:#dfe8ff;
-      border-color:#6a8cff;
-      box-shadow: 0 0 0 3px rgba(106,140,255,.08);
-    }
-
   </style>
 </head>
 <body>
@@ -203,20 +132,6 @@
         <div class="contactLine">
           <span data-i18n="contact_label">Write to us:</span>
           <a href="mailto:info@lingomagus.com">info@lingomagus.com</a>
-        </div>
-
-        <div class="audioPreview">
-          <p class="audioPreviewTitle">Эпизод 1 — Кто мы такие</p>
-          <p class="audioPreviewSub">Сезон 1 — Первая встреча</p>
-          <div class="playerRow">
-            <button id="playBtn" class="playBtn" type="button">▶ Включить эпизод</button>
-          </div>
-          <audio id="episodeAudio" class="audioEl" preload="metadata" controls>
-            <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-          <div id="syncStatus" class="syncHint">Загрузка синхронизированного текста…</div>
-          <div id="transcript" class="transcript"></div>
         </div>
 
         <div class="note" data-i18n="cta_note">
@@ -416,79 +331,6 @@
         }
       });
     }
-
-    const episodeAudio = document.getElementById('episodeAudio');
-    const playBtn = document.getElementById('playBtn');
-    const transcript = document.getElementById('transcript');
-    const syncStatus = document.getElementById('syncStatus');
-    let fragments = [];
-    let activeIndex = -1;
-
-    function updatePlayerLabel(){
-      playBtn.textContent = episodeAudio.paused ? '▶ Включить эпизод' : '⏸ Пауза';
-    }
-
-    playBtn.addEventListener('click', () => {
-      if (episodeAudio.paused) {
-        episodeAudio.play();
-      } else {
-        episodeAudio.pause();
-      }
-    });
-
-    episodeAudio.addEventListener('play', updatePlayerLabel);
-    episodeAudio.addEventListener('pause', updatePlayerLabel);
-    episodeAudio.addEventListener('ended', updatePlayerLabel);
-
-    function renderTranscript(){
-      transcript.innerHTML = '';
-      fragments.forEach((frag) => {
-        const word = document.createElement('span');
-        word.className = 'word';
-        word.textContent = String(frag.text || '').trim();
-        word.addEventListener('click', () => {
-          episodeAudio.currentTime = Number(frag.start || 0);
-          episodeAudio.play();
-        });
-        transcript.appendChild(word);
-      });
-    }
-
-    function updateHighlight(){
-      if (!fragments.length) return;
-      const t = episodeAudio.currentTime;
-      const idx = fragments.findIndex(f => t >= Number(f.start || 0) && t < Number(f.end || 0));
-      if (idx !== activeIndex) {
-        const els = transcript.querySelectorAll('.word');
-        if (activeIndex >= 0 && els[activeIndex]) els[activeIndex].classList.remove('active');
-        if (idx >= 0 && els[idx]) {
-          els[idx].classList.add('active');
-          els[idx].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
-        activeIndex = idx;
-      }
-    }
-
-    episodeAudio.addEventListener('timeupdate', updateHighlight);
-
-    async function loadEpisodeTranscript(){
-      try {
-        const res = await fetch('episode1.json');
-        if (!res.ok) throw new Error('json not found');
-        const data = await res.json();
-        if (!Array.isArray(data.fragments)) throw new Error('unsupported json shape');
-        fragments = data.fragments;
-        renderTranscript();
-        syncStatus.textContent = '';
-      } catch (err) {
-        console.error(err);
-        syncStatus.textContent = 'Синхронизированный текст пока не удалось загрузить.';
-      }
-    }
-
-    loadEpisodeTranscript();
-    updatePlayerLabel();
-
     btnEN.addEventListener('click', ()=>setLang('en'));
     btnRU.addEventListener('click', ()=>setLang('ru'));
     setLang('en');
