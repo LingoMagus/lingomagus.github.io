@@ -411,19 +411,23 @@
       if(syncLoaded || !episodeText) return;
       try{
         const res = await fetch('sync_data.json');
-        syncData = await res.json();
+        if(!res.ok) throw new Error('Failed to load sync_data.json');
+        const data = await res.json();
+        syncData = Array.isArray(data) ? data : (Array.isArray(data.words) ? data.words : []);
+        if(!syncData.length) throw new Error('No word timing data found');
+
         episodeText.innerHTML = '';
         wordSpans = [];
         syncData.forEach((item, index) => {
           const span = document.createElement('span');
-          span.textContent = item.word + ' ';
+          span.textContent = (item.word || '') + ' ';
           span.dataset.index = index;
           episodeText.appendChild(span);
           wordSpans.push(span);
         });
         syncLoaded = true;
       }catch(err){
-        episodeText.textContent = 'Preview files not found. Place sync_data.json and S1_E1_FinalTest.mp3 in the same folder as this HTML file.';
+        episodeText.textContent = 'Could not load the synced text preview.';
       }
     }
 
