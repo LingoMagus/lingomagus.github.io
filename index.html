@@ -109,6 +109,44 @@
     .bullets {margin: 10px 0 0; padding-left: 0; list-style: none;}
     .bullets li{margin:8px 0;}
     .bullets li:before{content:"— "; color:var(--muted);}
+
+    .episode-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:10px 0 14px;
+    }
+    .episode-tag{
+      display:inline-block;
+      border:1px solid var(--border);
+      background:var(--bg);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .episode-audio{
+      width:100%;
+      margin-top:4px;
+    }
+    .episode-text{
+      margin-top:18px;
+      padding:18px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--bg);
+      font-size:1.08rem;
+      line-height:1.9;
+    }
+    .episode-text span{
+      transition: background-color .12s ease;
+      padding:.05em .08em;
+      border-radius:.22em;
+    }
+    .episode-text span.active{
+      background:rgba(255,230,120,.75);
+    }
+
   </style>
 </head>
 <body>
@@ -198,6 +236,22 @@
         <p class="note" data-i18n="status_p2">If you’d like to see or listen to the first episodes as they appear, write to us at <a href="mailto:info@lingomagus.com">info@lingomagus.com</a>.</p>
       </section>
 
+
+      <section>
+        <h2 data-i18n="sample_h2">Try Episode 1</h2>
+        <p data-i18n="sample_p1">Listen to a short Russian sample and follow the text as it highlights in sync.</p>
+        <div class="episode-meta">
+          <span class="episode-tag" data-i18n="sample_tag1">Native human voice</span>
+          <span class="episode-tag" data-i18n="sample_tag2">Highlighted reading</span>
+          <span class="episode-tag" data-i18n="sample_tag3">Prototype episode</span>
+        </div>
+        <audio id="episode-audio" class="episode-audio" controls preload="metadata">
+          <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
+          Your browser does not support the audio element.
+        </audio>
+        <div id="episode-text" class="episode-text" aria-live="polite"></div>
+      </section>
+
       <section>
         <h2 data-i18n="cta_h2">Be part of a living project.</h2>
         <p data-i18n="cta_p1">You can write at any time and share the language challenges you notice at home: recurring mistakes, “stuck” phrases, moments when it’s hard for a child to express a thought.</p>
@@ -261,6 +315,12 @@
         cta_p1: "You can write at any time and share the language challenges you notice at home: recurring mistakes, “stuck” phrases, moments when it’s hard for a child to express a thought.",
         cta_p2: "We collect these patterns with care and weave them into future stories over time.",
 
+
+        sample_h2: "Try Episode 1",
+        sample_p1: "Listen to a short Russian sample and follow the text as it highlights in sync.",
+        sample_tag1: "Native human voice",
+        sample_tag2: "Highlighted reading",
+        sample_tag3: "Prototype episode",
         footer_line1: "Language. Identity. Belonging.",
         footer_line2: "© 2026 LingoMagus. All rights reserved.",
         for_li4: "Forward-thinking parents who see a heritage language not only as roots, but as a real advantage — helping their children grow with cognitive flexibility, cultural depth, and opportunities anywhere in the world."
@@ -310,6 +370,12 @@
         cta_p1: "Вы можете в любой момент написать нам и рассказать, с какими языковыми трудностями вы сталкиваетесь дома: повторяющиеся ошибки, «застрявшие» фразы, ситуации, где ребёнку сложно выразить мысль.",
         cta_p2: "Мы внимательно собираем такие наблюдения и со временем вплетаем их в новые истории.",
 
+
+        sample_h2: "Послушать эпизод 1",
+        sample_p1: "Послушайте короткий фрагмент на русском языке и следите за текстом, который подсвечивается по ходу аудио.",
+        sample_tag1: "Живой человеческий голос",
+        sample_tag2: "Подсвечиваемый текст",
+        sample_tag3: "Прототип эпизода",
         footer_line1: "Язык. Связь. Принадлежность.",
         footer_line2: "© 2026 LingoMagus. Все права защищены.",
         for_li4: "Для родителей, которые смотрят в будущее. Родной язык — это не только корни, но и реальное преимущество: гибкость ума, широта кругозора и больше возможностей для успеха в любой точке мира."
@@ -334,6 +400,55 @@
     btnEN.addEventListener('click', ()=>setLang('en'));
     btnRU.addEventListener('click', ()=>setLang('ru'));
     setLang('en');
+
+    const episodeAudio = document.getElementById('episode-audio');
+    const episodeText = document.getElementById('episode-text');
+    let syncData = [];
+    let wordSpans = [];
+    let syncLoaded = false;
+
+    async function loadEpisodeSync(){
+      if(syncLoaded || !episodeText) return;
+      try{
+        const res = await fetch('sync_data.json');
+        syncData = await res.json();
+        episodeText.innerHTML = '';
+        wordSpans = [];
+        syncData.forEach((item, index) => {
+          const span = document.createElement('span');
+          span.textContent = item.word + ' ';
+          span.dataset.index = index;
+          episodeText.appendChild(span);
+          wordSpans.push(span);
+        });
+        syncLoaded = true;
+      }catch(err){
+        episodeText.textContent = 'Preview files not found. Place sync_data.json and S1_E1_FinalTest.mp3 in the same folder as this HTML file.';
+      }
+    }
+
+    function updateEpisodeHighlight(){
+      if(syncLoaded && episodeAudio && !episodeAudio.paused){
+        const t = episodeAudio.currentTime;
+        let activeIndex = -1;
+        for(let i = 0; i < syncData.length; i++){
+          if(t >= syncData[i].start && t <= syncData[i].end){
+            activeIndex = i;
+            break;
+          }
+        }
+        wordSpans.forEach((span, i) => {
+          span.classList.toggle('active', i === activeIndex);
+        });
+      }
+      requestAnimationFrame(updateEpisodeHighlight);
+    }
+
+    if(episodeAudio){
+      loadEpisodeSync();
+      requestAnimationFrame(updateEpisodeHighlight);
+    }
+
   </script>
 </body>
 </html>
