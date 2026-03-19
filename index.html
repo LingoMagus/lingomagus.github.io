@@ -129,12 +129,46 @@
       width:100%;
       margin-top:4px;
     }
-    .episode-text{
+    .episode-transcript{
       margin-top:18px;
-      padding:18px;
       border:1px solid var(--border);
       border-radius:14px;
       background:var(--bg);
+      overflow:hidden;
+    }
+    .episode-transcript summary{
+      list-style:none;
+      cursor:pointer;
+      padding:16px 18px;
+      font-weight:600;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .episode-transcript summary::-webkit-details-marker{display:none;}
+    .episode-transcript summary::after{
+      content:'▾';
+      color:var(--muted);
+      font-size:16px;
+      transition:transform .18s ease;
+      flex:0 0 auto;
+    }
+    .episode-transcript[open] summary::after{
+      transform:rotate(180deg);
+    }
+    .episode-transcript-note{
+      margin:0;
+      padding:0 18px 14px;
+      color:var(--muted);
+      font-size:14px;
+    }
+    .episode-text{
+      margin:0 18px 18px;
+      padding:18px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
       font-size:1.08rem;
       line-height:1.9;
     }
@@ -249,7 +283,11 @@
           <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
-        <div id="episode-text" class="episode-text" aria-live="polite"></div>
+        <details class="episode-transcript">
+          <summary data-i18n="sample_transcript_toggle">Show highlighted transcript</summary>
+          <p class="episode-transcript-note" data-i18n="sample_transcript_note">Open to follow the synced text while listening.</p>
+          <div id="episode-text" class="episode-text" aria-live="polite"></div>
+        </details>
       </section>
 
       <section>
@@ -321,6 +359,8 @@
         sample_tag1: "Native human voice",
         sample_tag2: "Highlighted reading",
         sample_tag3: "Prototype episode",
+        sample_transcript_toggle: "Show highlighted transcript",
+        sample_transcript_note: "Open to follow the synced text while listening.",
         footer_line1: "Language. Identity. Belonging.",
         footer_line2: "© 2026 LingoMagus. All rights reserved.",
         for_li4: "Forward-thinking parents who see a heritage language not only as roots, but as a real advantage — helping their children grow with cognitive flexibility, cultural depth, and opportunities anywhere in the world."
