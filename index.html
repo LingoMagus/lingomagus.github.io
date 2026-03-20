@@ -179,19 +179,19 @@
       background:rgba(255,255,255,.8);
       font-size:1.08rem;
       line-height:1.9;
-      max-height:170px;
-      overflow:auto;
+      max-height:180px;
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
       scroll-behavior:smooth;
     }
     .episode-text span{
-      display:block;
       transition: background-color .12s ease;
-      padding:.18em .22em;
-      margin:0 0 .32em 0;
-      border-radius:.5em;
+      padding:.05em .08em;
+      border-radius:.22em;
     }
     .episode-text span.active{
       background:rgba(255,230,120,.75);
+      box-shadow: 0 0 0 1px rgba(0,0,0,.03) inset;
     }
 
   </style>
@@ -458,10 +458,12 @@
 
     const episodeAudio = document.getElementById('episode-audio');
     const episodeText = document.getElementById('episode-text');
-    let syncWords = [];
+    const episodeTranscript = document.querySelector('.episode-transcript');
+
+    let syncItems = [];
     let syncLoaded = false;
     let lastActiveIndex = -1;
-    let pendingScrollFrame = null;
+    let rafId = null;
 
     async function loadEpisodeSync(){
       if(syncLoaded || !episodeText) return;
@@ -471,46 +473,57 @@
         const data = await res.json();
 
         if(Array.isArray(data)){
-          syncWords = data;
+          syncItems = data;
+        } else if(Array.isArray(data.sentences)) {
+          syncItems = data.sentences.map(item => ({
+            text: item.sentence || '',
+            start: Number(item.start) || 0,
+            end: Number(item.end) || 0
+          }));
         } else if(Array.isArray(data.words)) {
-          syncWords = data.words;
-        } else if (Array.isArray(data.sentences)) {
-          syncWords = data.sentences.map(item => ({
-            word: item.sentence || '',
-            start: item.start,
-            end: item.end
+          syncItems = data.words.map(item => ({
+            text: item.word || '',
+            start: Number(item.start) || 0,
+            end: Number(item.end) || 0
           }));
         } else {
-          syncWords = [];
+          syncItems = [];
         }
 
-        if(!syncWords.length) throw new Error('No timing data found');
+        if(!syncItems.length) throw new Error('No timing data found');
 
         episodeText.innerHTML = '';
-        syncWords.forEach((item, index) => {
+        syncItems.forEach((item, index) => {
           const span = document.createElement('span');
-          const needsTrailingSpace = !/[\s—–-]$/.test(item.word || '');
-          span.textContent = (item.word || '') + (needsTrailingSpace ? ' ' : '');
+          span.textContent = item.text;
           span.dataset.index = index;
           episodeText.appendChild(span);
         });
 
+        episodeText.scrollTop = 0;
         syncLoaded = true;
       }catch(err){
         episodeText.textContent = 'Could not load the synced text preview.';
       }
     }
 
-    function keepActiveWordInView(activeSpan){
-      if(!episodeText || !activeSpan) return;
+    function getActiveIndex(currentTime){
+      for(let i = 0; i < syncItems.length; i++){
+        if(currentTime >= syncItems[i].start && currentTime <= syncItems[i].end){
+          return i;
+        }
+      }
+      return -1;
+    }
+
+    function scrollActiveSentenceIntoView(activeEl){
+      if(!episodeText || !activeEl) return;
+      if(episodeTranscript && !episodeTranscript.open) return;
 
       const targetTop = Math.max(
         0,
-        activeSpan.offsetTop - Math.round((episodeText.clientHeight - activeSpan.offsetHeight) * 0.5)
+        activeEl.offsetTop - Math.round((episodeText.clientHeight - activeEl.offsetHeight) / 2)
       );
-
-      const distance = Math.abs(episodeText.scrollTop - targetTop);
-      if(distance < 8) return;
 
       episodeText.scrollTo({
         top: targetTop,
@@ -518,64 +531,58 @@
       });
     }
 
-    function updateEpisodeHighlight(){
-      if(syncLoaded && episodeAudio){
-        const t = episodeAudio.currentTime;
-        let activeIndex = -1;
+    function renderActiveState(activeIndex){
+      const spans = episodeText.querySelectorAll('span');
+      spans.forEach((span, i) => {
+        span.classList.toggle('active', i === activeIndex);
+      });
 
-        for(let i = 0; i < syncWords.length; i++){
-          if(t >= syncWords[i].start && t <= syncWords[i].end){
-            activeIndex = i;
-            break;
-          }
-        }
-
-        const spans = episodeText.querySelectorAll('span');
-        spans.forEach((span, i) => {
-          span.classList.toggle('active', i === activeIndex);
-        });
-
-        if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
-          keepActiveWordInView(spans[activeIndex]);
+      if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
+        const activeEl = spans[activeIndex];
+        if(activeEl){
+          scrollActiveSentenceIntoView(activeEl);
         }
         lastActiveIndex = activeIndex;
       }
+    }
 
-      requestAnimationFrame(updateEpisodeHighlight);
+    function updateEpisodeHighlight(){
+      if(syncLoaded && episodeAudio){
+        const activeIndex = getActiveIndex(episodeAudio.currentTime);
+        renderActiveState(activeIndex);
+      }
+      rafId = requestAnimationFrame(updateEpisodeHighlight);
     }
 
     if(episodeAudio){
-      loadEpisodeSync();
-
-      episodeAudio.addEventListener('play', () => {
-        const spans = episodeText.querySelectorAll('span');
-        if(spans.length){
-          keepActiveWordInView(spans[0]);
-        }
+      loadEpisodeSync().then(() => {
+        if(rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(updateEpisodeHighlight);
       });
 
-      episodeAudio.addEventListener('timeupdate', () => {
+      episodeAudio.addEventListener('seeked', () => {
+        if(!syncLoaded) return;
+        const activeIndex = getActiveIndex(episodeAudio.currentTime);
+        renderActiveState(activeIndex);
+      });
+
+      episodeAudio.addEventListener('ended', () => {
+        episodeText.scrollTo({ top: 0, behavior: 'smooth' });
+        lastActiveIndex = -1;
         const spans = episodeText.querySelectorAll('span');
-        if(!spans.length) return;
-        let activeIndex = -1;
-        const t = episodeAudio.currentTime;
-        for(let i = 0; i < syncWords.length; i++){
-          if(t >= syncWords[i].start && t <= syncWords[i].end){
-            activeIndex = i;
-            break;
+        spans.forEach(span => span.classList.remove('active'));
+      });
+
+      if(episodeTranscript){
+        episodeTranscript.addEventListener('toggle', () => {
+          if(!episodeTranscript.open || !syncLoaded) return;
+          const activeIndex = getActiveIndex(episodeAudio.currentTime);
+          const spans = episodeText.querySelectorAll('span');
+          if(activeIndex !== -1 && spans[activeIndex]){
+            scrollActiveSentenceIntoView(spans[activeIndex]);
           }
-        }
-        if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
-          keepActiveWordInView(spans[activeIndex]);
-          lastActiveIndex = activeIndex;
-        }
-      });
-
-      requestAnimationFrame(updateEpisodeHighlight);
-    }
-    if(episodeAudio){
-      loadEpisodeSync();
-      requestAnimationFrame(updateEpisodeHighlight);
+        });
+      }
     }
 
   </script>
