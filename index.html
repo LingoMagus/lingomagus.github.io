@@ -171,6 +171,9 @@
       background:#fff;
       font-size:1.08rem;
       line-height:1.9;
+      max-height:240px;
+      overflow:auto;
+      scroll-behavior:smooth;
     }
     .episode-text span{
       transition: background-color .12s ease;
@@ -272,7 +275,7 @@
 
 
       <section>
-        <h2 data-i18n="sample_h2">Try Episode 1</h2>
+        <h2 data-i18n="sample_h2">Try Prototype Episode 1</h2>
         <p data-i18n="sample_p1">Listen to a short Russian sample and follow the text as it highlights in sync.</p>
         <div class="episode-meta">
           <span class="episode-tag" data-i18n="sample_tag1">Native human voice</span>
@@ -354,7 +357,7 @@
         cta_p2: "We collect these patterns with care and weave them into future stories over time.",
 
 
-        sample_h2: "Try Episode 1",
+        sample_h2: "Try Prototype Episode 1",
         sample_p1: "Listen to a short Russian sample and follow the text as it highlights in sync.",
         sample_tag1: "Native human voice",
         sample_tag2: "Highlighted reading",
@@ -411,11 +414,13 @@
         cta_p2: "Мы внимательно собираем такие наблюдения и со временем вплетаем их в новые истории.",
 
 
-        sample_h2: "Послушать эпизод 1",
+        sample_h2: "Послушать пример эпизода 1",
         sample_p1: "Послушайте короткий фрагмент на русском языке и следите за текстом, который подсвечивается по ходу аудио.",
         sample_tag1: "Живой человеческий голос",
         sample_tag2: "Подсвечиваемый текст",
         sample_tag3: "Прототип эпизода",
+        sample_transcript_toggle: "Показать текст с подсветкой",
+        sample_transcript_note: "Откройте, чтобы следить за текстом во время прослушивания.",
         footer_line1: "Язык. Связь. Принадлежность.",
         footer_line2: "© 2026 LingoMagus. Все права защищены.",
         for_li4: "Для родителей, которые смотрят в будущее. Родной язык — это не только корни, но и реальное преимущество: гибкость ума, широта кругозора и больше возможностей для успеха в любой точке мира."
@@ -446,6 +451,7 @@
     let syncData = [];
     let wordSpans = [];
     let syncLoaded = false;
+    let lastActiveIndex = -1;
 
     async function loadEpisodeSync(){
       if(syncLoaded || !episodeText) return;
@@ -471,8 +477,22 @@
       }
     }
 
+    function keepActiveWordInView(activeSpan){
+      if(!episodeText || !activeSpan) return;
+      const containerTop = episodeText.scrollTop;
+      const containerBottom = containerTop + episodeText.clientHeight;
+      const spanTop = activeSpan.offsetTop;
+      const spanBottom = spanTop + activeSpan.offsetHeight;
+      const padding = Math.max(36, episodeText.clientHeight * 0.28);
+
+      if(spanTop < containerTop + padding || spanBottom > containerBottom - padding){
+        const target = Math.max(0, spanTop - (episodeText.clientHeight * 0.38));
+        episodeText.scrollTo({ top: target, behavior: 'smooth' });
+      }
+    }
+
     function updateEpisodeHighlight(){
-      if(syncLoaded && episodeAudio && !episodeAudio.paused){
+      if(syncLoaded && episodeAudio){
         const t = episodeAudio.currentTime;
         let activeIndex = -1;
         for(let i = 0; i < syncData.length; i++){
@@ -484,6 +504,10 @@
         wordSpans.forEach((span, i) => {
           span.classList.toggle('active', i === activeIndex);
         });
+        if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
+          keepActiveWordInView(wordSpans[activeIndex]);
+        }
+        lastActiveIndex = activeIndex;
       }
       requestAnimationFrame(updateEpisodeHighlight);
     }
