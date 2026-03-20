@@ -179,14 +179,16 @@
       background:rgba(255,255,255,.8);
       font-size:1.08rem;
       line-height:1.9;
-      max-height:240px;
+      max-height:170px;
       overflow:auto;
       scroll-behavior:smooth;
     }
     .episode-text span{
+      display:block;
       transition: background-color .12s ease;
-      padding:.05em .08em;
-      border-radius:.22em;
+      padding:.18em .22em;
+      margin:0 0 .32em 0;
+      border-radius:.5em;
     }
     .episode-text span.active{
       background:rgba(255,230,120,.75);
@@ -502,22 +504,18 @@
     function keepActiveWordInView(activeSpan){
       if(!episodeText || !activeSpan) return;
 
-      const containerRect = episodeText.getBoundingClientRect();
-      const spanRect = activeSpan.getBoundingClientRect();
-      const comfortZoneTop = containerRect.top + (episodeText.clientHeight * 0.22);
-      const comfortZoneBottom = containerRect.bottom - (episodeText.clientHeight * 0.28);
+      const targetTop = Math.max(
+        0,
+        activeSpan.offsetTop - Math.round((episodeText.clientHeight - activeSpan.offsetHeight) * 0.5)
+      );
 
-      if(spanRect.top < comfortZoneTop || spanRect.bottom > comfortZoneBottom){
-        const targetTop = activeSpan.offsetTop - (episodeText.clientHeight * 0.38);
+      const distance = Math.abs(episodeText.scrollTop - targetTop);
+      if(distance < 8) return;
 
-        if(pendingScrollFrame) cancelAnimationFrame(pendingScrollFrame);
-        pendingScrollFrame = requestAnimationFrame(() => {
-          episodeText.scrollTo({
-            top: Math.max(0, targetTop),
-            behavior: 'smooth'
-          });
-        });
-      }
+      episodeText.scrollTo({
+        top: targetTop,
+        behavior: 'smooth'
+      });
     }
 
     function updateEpisodeHighlight(){
@@ -546,6 +544,35 @@
       requestAnimationFrame(updateEpisodeHighlight);
     }
 
+    if(episodeAudio){
+      loadEpisodeSync();
+
+      episodeAudio.addEventListener('play', () => {
+        const spans = episodeText.querySelectorAll('span');
+        if(spans.length){
+          keepActiveWordInView(spans[0]);
+        }
+      });
+
+      episodeAudio.addEventListener('timeupdate', () => {
+        const spans = episodeText.querySelectorAll('span');
+        if(!spans.length) return;
+        let activeIndex = -1;
+        const t = episodeAudio.currentTime;
+        for(let i = 0; i < syncWords.length; i++){
+          if(t >= syncWords[i].start && t <= syncWords[i].end){
+            activeIndex = i;
+            break;
+          }
+        }
+        if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
+          keepActiveWordInView(spans[activeIndex]);
+          lastActiveIndex = activeIndex;
+        }
+      });
+
+      requestAnimationFrame(updateEpisodeHighlight);
+    }
     if(episodeAudio){
       loadEpisodeSync();
       requestAnimationFrame(updateEpisodeHighlight);
