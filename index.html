@@ -300,7 +300,7 @@
         <details class="episode-transcript">
           <summary data-i18n="sample_transcript_toggle">Show highlighted transcript</summary>
           <p class="episode-transcript-note" data-i18n="sample_transcript_note">Open to follow the synced text while listening.</p>
-          <div id="episode-text" class="episode-text" aria-live="polite"></div>
+          <div id="episode-text" class="episode-text"></div>
         </details>
       </section>
 
@@ -545,7 +545,7 @@
       });
 
       episodeAudio.addEventListener('ended', () => {
-        episodeText.scrollTo({ top: 0, behavior: 'smooth' });
+        episodeText.scrollTop = 0;
         lastActiveIndex = -1;
         episodeText.querySelectorAll('span').forEach(span => span.classList.remove('active'));
       });
