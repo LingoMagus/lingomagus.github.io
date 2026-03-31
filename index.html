@@ -488,6 +488,7 @@
           const needsTrailingSpace = !/[\s—–-]$/.test(item.word || '');
           span.textContent = (item.word || '') + (needsTrailingSpace ? ' ' : '');
           span.dataset.index = index;
+          span.dataset.sentence = String(item.sentence || '');
           episodeText.appendChild(span);
         });
 
@@ -506,38 +507,49 @@
       return -1;
     }
 
-    let lastScrollMs = 0;
+    let lastScrolledSentence = -1;
 
-    function keepActiveWordInView(activeSpan){
-      if(!episodeText || !activeSpan) return;
+    function keepActiveWordInView(activeIndex, spans){
+      if(!episodeText) return;
       if(episodeTranscript && !episodeTranscript.open) return;
       if(episodeAudio && episodeAudio.paused) return;
+      if(activeIndex < 0 || !spans[activeIndex]) return;
 
-      const now = Date.now();
-      if(now - lastScrollMs < 220) return;
+      const sentenceId = Number(syncWords[activeIndex].sentence || -1);
+      if(sentenceId === -1) return;
+      if(sentenceId === lastScrolledSentence) return;
+
+      let anchorSpan = spans[activeIndex];
+      for(let i = activeIndex; i >= 0; i--){
+        if(Number(spans[i].dataset.sentence || -1) !== sentenceId) break;
+        anchorSpan = spans[i];
+      }
 
       const containerTop = episodeText.scrollTop;
       const containerHeight = episodeText.clientHeight;
       const containerBottom = containerTop + containerHeight;
 
-      const spanTop = activeSpan.offsetTop;
-      const spanBottom = spanTop + activeSpan.offsetHeight;
+      const anchorTop = anchorSpan.offsetTop;
+      const anchorBottom = anchorTop + anchorSpan.offsetHeight;
 
       const topBuffer = Math.round(containerHeight * 0.18);
-      const bottomBuffer = Math.round(containerHeight * 0.22);
+      const bottomBuffer = Math.round(containerHeight * 0.26);
 
-      const outsideTop = spanTop < containerTop + topBuffer;
-      const outsideBottom = spanBottom > containerBottom - bottomBuffer;
+      const outsideTop = anchorTop < containerTop + topBuffer;
+      const outsideBottom = anchorBottom > containerBottom - bottomBuffer;
 
-      if(!outsideTop && !outsideBottom) return;
+      if(!outsideTop && !outsideBottom){
+        lastScrolledSentence = sentenceId;
+        return;
+      }
 
       const targetTop = Math.max(
         0,
-        spanTop - Math.round(containerHeight * 0.32)
+        anchorTop - Math.round(containerHeight * 0.22)
       );
 
       episodeText.scrollTop = targetTop;
-      lastScrollMs = now;
+      lastScrolledSentence = sentenceId;
     }
 
     function renderEpisodeState(activeIndex){
@@ -546,8 +558,8 @@
         span.classList.toggle('active', i === activeIndex);
       });
 
-      if(activeIndex !== -1 && activeIndex !== lastActiveIndex && spans[activeIndex]){
-        keepActiveWordInView(spans[activeIndex]);
+      if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
+        keepActiveWordInView(activeIndex, spans);
       }
 
       lastActiveIndex = activeIndex;
@@ -569,7 +581,12 @@
 
       episodeAudio.addEventListener('seeked', () => {
         if(!syncLoaded) return;
+        lastScrolledSentence = -1;
         renderEpisodeState(findActiveWordIndex(episodeAudio.currentTime));
+      });
+
+      episodeAudio.addEventListener('play', () => {
+        lastScrolledSentence = -1;
       });
 
       episodeAudio.addEventListener('ended', () => {
@@ -581,6 +598,7 @@
       if(episodeTranscript){
         episodeTranscript.addEventListener('toggle', () => {
           if(!episodeTranscript.open || !syncLoaded) return;
+          lastScrolledSentence = -1;
           renderEpisodeState(findActiveWordIndex(episodeAudio.currentTime));
         });
       }
