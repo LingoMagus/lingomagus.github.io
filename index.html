@@ -179,10 +179,12 @@
       background:rgba(255,255,255,.8);
       font-size:1.08rem;
       line-height:1.9;
-      max-height:180px;
+      max-height:240px;
       overflow-y:auto;
-      -webkit-overflow-scrolling: touch;
+      overflow-x:hidden;
       scroll-behavior:smooth;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
     .episode-text span{
       transition: background-color .12s ease;
@@ -191,7 +193,10 @@
     }
     .episode-text span.active{
       background:rgba(255,230,120,.75);
-      box-shadow: 0 0 0 1px rgba(0,0,0,.03) inset;
+    }
+    .episode-sentence{
+      display:block;
+      margin:0 0 .35em 0;
     }
 
   </style>
@@ -293,7 +298,7 @@
           <span class="episode-tag" data-i18n="sample_tag3">Prototype episode</span>
         </div>
         <audio id="episode-audio" class="episode-audio" controls preload="metadata">
-          <source src="S1_E1_FinalTest.mp3" type="audio/mpeg" />
+          <source src="https://lingomagus.com/S1_E1_FinalTest.mp3" type="audio/mpeg" />
           Your browser does not support the audio element.
         </audio>
         <details class="episode-transcript">
@@ -459,11 +464,11 @@
     const episodeAudio = document.getElementById('episode-audio');
     const episodeText = document.getElementById('episode-text');
     const episodeTranscript = document.querySelector('.episode-transcript');
-
-    let syncItems = [];
+    let syncWords = [];
     let syncLoaded = false;
     let lastActiveIndex = -1;
-    let rafId = null;
+    let lastActiveSentence = -1;
+    let animationFrameId = null;
 
     async function loadEpisodeSync(){
       if(syncLoaded || !episodeText) return;
@@ -473,114 +478,124 @@
         const data = await res.json();
 
         if(Array.isArray(data)){
-          syncItems = data;
-        } else if(Array.isArray(data.sentences)) {
-          syncItems = data.sentences.map(item => ({
-            text: item.sentence || '',
-            start: Number(item.start) || 0,
-            end: Number(item.end) || 0
-          }));
+          syncWords = data;
         } else if(Array.isArray(data.words)) {
-          syncItems = data.words.map(item => ({
-            text: item.word || '',
-            start: Number(item.start) || 0,
-            end: Number(item.end) || 0
-          }));
+          syncWords = data.words;
         } else {
-          syncItems = [];
+          syncWords = [];
         }
 
-        if(!syncItems.length) throw new Error('No timing data found');
+        if(!syncWords.length) throw new Error('No word timing data found');
 
         episodeText.innerHTML = '';
-        syncItems.forEach((item, index) => {
+        let currentSentenceId = null;
+        let currentSentenceEl = null;
+
+        syncWords.forEach((item, index) => {
+          const sentenceId = Number(item.sentence || 0);
+
+          if(sentenceId !== currentSentenceId){
+            currentSentenceId = sentenceId;
+            currentSentenceEl = document.createElement('div');
+            currentSentenceEl.className = 'episode-sentence';
+            currentSentenceEl.dataset.sentence = String(sentenceId);
+            episodeText.appendChild(currentSentenceEl);
+          }
+
           const span = document.createElement('span');
-          span.textContent = item.text;
-          span.dataset.index = index;
-          episodeText.appendChild(span);
+          const word = String(item.word || '');
+          const needsTrailingSpace = word && !/[\s—–-]$/.test(word);
+          span.textContent = word + (needsTrailingSpace ? ' ' : '');
+          span.dataset.index = String(index);
+          span.dataset.sentence = String(sentenceId);
+          currentSentenceEl.appendChild(span);
         });
 
         episodeText.scrollTop = 0;
         syncLoaded = true;
       }catch(err){
         episodeText.textContent = 'Could not load the synced text preview.';
+        console.error(err);
       }
     }
 
-    function getActiveIndex(currentTime){
-      for(let i = 0; i < syncItems.length; i++){
-        if(currentTime >= syncItems[i].start && currentTime <= syncItems[i].end){
+    function findActiveWordIndex(currentTime){
+      for(let i = 0; i < syncWords.length; i++){
+        if(currentTime >= syncWords[i].start && currentTime <= syncWords[i].end){
           return i;
         }
       }
       return -1;
     }
 
-    function scrollActiveSentenceIntoView(activeEl){
-      if(!episodeText || !activeEl) return;
-      if(episodeTranscript && !episodeTranscript.open) return;
+    function keepActiveSentenceInView(sentenceId){
+      if(!episodeText || !episodeTranscript || !episodeTranscript.open) return;
+      if(!episodeAudio || episodeAudio.paused) return;
+      if(sentenceId === -1 || sentenceId === lastActiveSentence) return;
+
+      const sentenceEl = episodeText.querySelector('.episode-sentence[data-sentence="' + sentenceId + '"]');
+      if(!sentenceEl) return;
 
       const targetTop = Math.max(
         0,
-        activeEl.offsetTop - Math.round((episodeText.clientHeight - activeEl.offsetHeight) / 2)
+        sentenceEl.offsetTop - Math.round(episodeText.clientHeight * 0.32)
       );
 
       episodeText.scrollTo({
         top: targetTop,
         behavior: 'smooth'
       });
+
+      lastActiveSentence = sentenceId;
     }
 
-    function renderActiveState(activeIndex){
+    function renderEpisodeState(activeIndex){
       const spans = episodeText.querySelectorAll('span');
       spans.forEach((span, i) => {
         span.classList.toggle('active', i === activeIndex);
       });
 
-      if(activeIndex !== -1 && activeIndex !== lastActiveIndex){
-        const activeEl = spans[activeIndex];
-        if(activeEl){
-          scrollActiveSentenceIntoView(activeEl);
-        }
-        lastActiveIndex = activeIndex;
+      if(activeIndex !== -1 && activeIndex !== lastActiveIndex && spans[activeIndex]){
+        const sentenceId = Number(spans[activeIndex].dataset.sentence || 0);
+        keepActiveSentenceInView(sentenceId);
       }
+
+      lastActiveIndex = activeIndex;
     }
 
     function updateEpisodeHighlight(){
       if(syncLoaded && episodeAudio){
-        const activeIndex = getActiveIndex(episodeAudio.currentTime);
-        renderActiveState(activeIndex);
+        const activeIndex = findActiveWordIndex(episodeAudio.currentTime);
+        renderEpisodeState(activeIndex);
       }
-      rafId = requestAnimationFrame(updateEpisodeHighlight);
+      animationFrameId = requestAnimationFrame(updateEpisodeHighlight);
     }
 
     if(episodeAudio){
       loadEpisodeSync().then(() => {
-        if(rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(updateEpisodeHighlight);
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(updateEpisodeHighlight);
       });
 
       episodeAudio.addEventListener('seeked', () => {
         if(!syncLoaded) return;
-        const activeIndex = getActiveIndex(episodeAudio.currentTime);
-        renderActiveState(activeIndex);
+        const activeIndex = findActiveWordIndex(episodeAudio.currentTime);
+        lastActiveSentence = -1;
+        renderEpisodeState(activeIndex);
       });
 
       episodeAudio.addEventListener('ended', () => {
         episodeText.scrollTo({ top: 0, behavior: 'smooth' });
         lastActiveIndex = -1;
-        const spans = episodeText.querySelectorAll('span');
-        spans.forEach(span => span.classList.remove('active'));
+        lastActiveSentence = -1;
+        episodeText.querySelectorAll('span').forEach(span => span.classList.remove('active'));
       });
 
       if(episodeTranscript){
         episodeTranscript.addEventListener('toggle', () => {
           if(!episodeTranscript.open || !syncLoaded) return;
-          const activeIndex = getActiveIndex(episodeAudio.currentTime);
-          const spans = episodeText.querySelectorAll('span');
-          if(activeIndex !== -1 && spans[activeIndex]){
-            scrollActiveSentenceIntoView(spans[activeIndex]);
-          }
+          lastActiveSentence = -1;
+          renderEpisodeState(findActiveWordIndex(episodeAudio.currentTime));
         });
       }
     }
