@@ -185,6 +185,7 @@
       scroll-behavior:auto;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      overflow-anchor: none;
     }
     .episode-text span{
       transition: background-color .12s ease;
@@ -463,7 +464,6 @@
     let syncWords = [];
     let syncLoaded = false;
     let lastActiveIndex = -1;
-    let animationFrameId = null;
 
     async function loadEpisodeSync(){
       if(syncLoaded || !episodeText) return;
@@ -472,10 +472,10 @@
         if(!res.ok) throw new Error('Failed to load sync_data.json');
         const data = await res.json();
 
-        if(Array.isArray(data)){
-          syncWords = data;
-        } else if(Array.isArray(data.words)) {
+        if(Array.isArray(data.words)) {
           syncWords = data.words;
+        } else if(Array.isArray(data)) {
+          syncWords = data;
         } else {
           syncWords = [];
         }
@@ -487,10 +487,11 @@
           const span = document.createElement('span');
           const needsTrailingSpace = !/[\s—–-]$/.test(item.word || '');
           span.textContent = (item.word || '') + (needsTrailingSpace ? ' ' : '');
-          span.dataset.index = index;
+          span.dataset.index = String(index);
           episodeText.appendChild(span);
         });
 
+        episodeText.scrollTop = 0;
         syncLoaded = true;
       }catch(err){
         episodeText.textContent = 'Could not load the synced text preview.';
@@ -506,37 +507,23 @@
       return -1;
     }
 
-    let lastScrollMs = 0;
-
-    function keepActiveWordInView(activeSpan){
-      return;
-    }
-
     function renderEpisodeState(activeIndex){
       const spans = episodeText.querySelectorAll('span');
       spans.forEach((span, i) => {
         span.classList.toggle('active', i === activeIndex);
       });
-
-      if(activeIndex !== -1 && activeIndex !== lastActiveIndex && spans[activeIndex]){
-        keepActiveWordInView(spans[activeIndex]);
-      }
-
       lastActiveIndex = activeIndex;
     }
 
-    function updateEpisodeHighlight(){
-      if(syncLoaded && episodeAudio){
-        const activeIndex = findActiveWordIndex(episodeAudio.currentTime);
-        renderEpisodeState(activeIndex);
-      }
-      animationFrameId = requestAnimationFrame(updateEpisodeHighlight);
-    }
-
     if(episodeAudio){
-      loadEpisodeSync().then(() => {
-        if(animationFrameId) cancelAnimationFrame(animationFrameId);
-        animationFrameId = requestAnimationFrame(updateEpisodeHighlight);
+      loadEpisodeSync();
+
+      episodeAudio.addEventListener('timeupdate', () => {
+        if(!syncLoaded) return;
+        const activeIndex = findActiveWordIndex(episodeAudio.currentTime);
+        if(activeIndex !== lastActiveIndex){
+          renderEpisodeState(activeIndex);
+        }
       });
 
       episodeAudio.addEventListener('seeked', () => {
@@ -545,7 +532,6 @@
       });
 
       episodeAudio.addEventListener('ended', () => {
-        episodeText.scrollTop = 0;
         lastActiveIndex = -1;
         episodeText.querySelectorAll('span').forEach(span => span.classList.remove('active'));
       });
